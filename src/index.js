@@ -65,23 +65,16 @@ function authenticate(username, password) {
 // The goal of this function is to parse a html page wrapped by a cheerio instance
 // and return an array of js objects which will be saved to the cozy by saveBills (https://github.com/konnectors/libs/blob/master/packages/cozy-konnector-libs/docs/api.md#savebills)
 async function parseReimbursements($) {
-  const dateFormat = 'DD/MM/YYYY'
   const reimbursements = scrape(
     $,
     {
       date: {
         sel: 'td a',
-        parse: date => moment.utc(date.slice(0, dateFormat.length), dateFormat)
+        parse: parseReimbursementDate
       },
       amount: {
         sel: 'td a',
-        parse: amount =>
-          parseFloat(
-            amount
-              .slice(0, amount.indexOf(currency) - 1)
-              .slice(dateFormat.length + '\n\t\t\t\t\t\t'.length)
-              .replace(',', '.')
-          )
+        parse: parseReimbursementAmount
       },
       url: {
         sel: 'td a',
@@ -92,32 +85,30 @@ async function parseReimbursements($) {
     'tbody.links tr'
   )
 
+  let documents = []
   for (let r of reimbursements) {
     const $details = await request(r.url, { rejectUnauthorized: false })
-    const fileurl = $details('div.ficheDetail ul li.item > a').attr('href')
     const beneficiary = $details('div.remb_description div.col-md-12')
       .text()
       .replace('Bénéficiaire :', '')
       .trim()
-    r.fileurl = `${baseUrl}${fileurl}`
-    r.beneficiary = beneficiary
-  }
-
-  return reimbursements.map(r => {
+    const url = $details('div.ficheDetail ul li.item > a').attr('href')
+    const fileurl = `${baseUrl}${url}`
     const date = r.date.toDate()
     const filename = normalizeFilename(
-      `${r.date.format('YYYY-MM-DD')}_${vendor}.pdf`
+      `${r.date.format('YYYY-MM-DD')}_${vendor}_${r.amount}${currency}.pdf`
     )
 
-    return {
+    documents.push({
       vendor: vendor,
       date: date,
-      type: 'health',
+      type: 'health_costs',
       subtype: 'reimbursement',
       isRefund: true,
       amount: r.amount,
       currency: currency,
-      fileurl: r.fileurl,
+      beneficiary: beneficiary,
+      fileurl: fileurl,
       filename: filename,
       metadata: {
         importDate: new Date(),
@@ -126,6 +117,23 @@ async function parseReimbursements($) {
       requestOptions: {
         rejectUnauthorized: false
       }
-    }
-  })
+    })
+  }
+
+  return documents
+}
+
+function parseReimbursementDate(date) {
+  const dateFormat = 'DD/MM/YYYY'
+  return moment.utc(date.slice(0, dateFormat.length), dateFormat)
+}
+
+function parseReimbursementAmount(amount) {
+  const dateFormat = 'DD/MM/YYYY'
+  return parseFloat(
+    amount
+      .slice(0, amount.indexOf(currency) - 1)
+      .slice(dateFormat.length + '\n\t\t\t\t\t\t'.length)
+      .replace(',', '.')
+  )
 }
