@@ -8,7 +8,7 @@
   "source": "git://github.com/rclement/cozy-konnector-laram.git",
   "editor": "Romain Clement",
   "vendor_link": "https://www.laram.fr",
-  "categories": ["other"],
+  "categories": ["insurance"],
   "fields": {
     "login": {
       "type": "text",
