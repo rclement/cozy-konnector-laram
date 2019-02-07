@@ -17,6 +17,9 @@ const request = requestFactory({
   jar: true
 })
 
+// NOTE: currently there is a chain certificate issue with moncompte.laram.fr
+// so all requests must manually add the following option: { rejectUnauthorized: false }
+
 const vendor = 'ram'
 const currency = '€'
 const baseUrl = 'https://moncompte.laram.fr'
@@ -55,7 +58,7 @@ function authenticate(username, password) {
       username: username,
       password: password
     },
-    rejectUnauthorized: false, // currently there is a chain certificate issue with moncompte.laram.fr
+    rejectUnauthorized: false,
     validate: (statusCode, $) => {
       return $(`a[href='/celro/assure/action/logout']`).length >= 1
     }
