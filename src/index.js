@@ -20,7 +20,7 @@ const request = requestFactory({
 // NOTE: currently there is a chain certificate issue with moncompte.laram.fr
 // so all requests must manually add the following option: { rejectUnauthorized: false }
 
-const vendor = 'ram'
+const vendor = 'laram'
 const currency = '€'
 const baseUrl = 'https://moncompte.laram.fr'
 const loginUrl = `${baseUrl}`
